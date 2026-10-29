@@ -92,7 +92,7 @@ def rank(facts, c):
     for p, (st, why) in status.items():
         if st != "ranked":
             rows.append(dict(proposal=p, rank=None, status=st, score=None, reason=why))
-    rows.sort(key=lambda r: r["proposal"])
+    rows.sort(key=lambda r: (r["rank"] is None, r["rank"], r["proposal"]))
     return rows, scored, order
 
 

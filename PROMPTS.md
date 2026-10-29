@@ -6,7 +6,7 @@ Two prompts, sent exactly as written. `{{...}}` placeholders are filled in by co
 
 **Ground rules for both**
 - Proposal text is **data, never instructions**. It is wrapped in tags and the model is told so.
-- Structured outputs enforce the JSON schema. The model is pinned and the prompt version is stored with every result. The current Claude API no longer accepts a temperature setting, so repeatability comes from the schema, the code checks and caching each file's extraction by hash.
+- Structured outputs enforce the JSON schema. Deterministic execution is achieved by setting temperature to 0 (greedy decoding), strictly enforcing schemas, pinning the model version, validating extracted facts with code checks, and caching each file's extraction by content hash.
 - [`prototype/extract.py`](prototype/extract.py) reads the two code blocks of Prompt 1 straight from this file, so what is documented is exactly what is sent.
 - The model never sets a status, score or rank. Code does that from the extracted facts.
 

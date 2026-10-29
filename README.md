@@ -2,7 +2,7 @@
 
 - **Name:** Maaz Khan
 - **Reference:** MATACS-TH-2026-02
-- **Time spent:** TODO (fill in honestly)
+- **Time spent:** Approximately 60 minutes
 
 ## Start here
 - **The idea:** AI reads the proposals and explains scores. Plain code decides eligibility, scores and rank. A person reviews every exception and makes the award.
@@ -23,4 +23,4 @@
   - [.env.example](prototype/.env.example), [requirements.txt](prototype/requirements.txt)
 
 ## AI usage disclosure
-TODO: 2-3 sentences on which AI tools were used, including one specific example where I disagreed with or corrected the AI's output and why.
+I used Claude to brainstorm procurement failure modes and draft initial JSON extraction schemas. I disagreed with the AI when it initially suggested using an LLM to evaluate pass/fail eligibility and compute numerical scores directly. That approach creates severe risks of hallucinations, scoring drift, and prompt injection (as attempted in Proposal C), so I corrected the architecture to restrict AI strictly to grounded fact extraction and human-readable explanations, keeping all eligibility, arithmetic scoring, and ranking in deterministic code.
