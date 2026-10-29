@@ -29,5 +29,10 @@
 | Hallucination | Scoring uses only extracted fields; reasons drafted from those fields only |
 | Bias | Rubric scores facts, not name or style; blind the contractor name during scoring; sample-audit results |
 | Manipulation (Proposal C contains text telling automated reviewers to rank it first) | Proposal text is untrusted data in the prompt; injection detector flags it; code excludes it from ranking (`flagged`) and a human decides; the instruction never affects any score |
-| Missing data (Proposal D has no timeline; Proposal B relies on a subcontractor's licence) | Missing timeline gets the lowest rubric score and a flag; subcontracted licence is `flagged`, not auto-passed, for human decision |
+| Missing data (Proposal D has no timeline; Proposal B relies on a subcontractor's licence) | D: a missing timeline scores 0 on timeline and the reviewer is told to ask for a schedule. B: the brief requires the licence to be held by the bidder, so it is `ineligible`; the human checkpoint can still review it |
 | Cost | One extraction call per proposal; scoring is code; cache by file hash; use a small model for extraction |
+
+## Sample set result
+A ranks 1 (98), E 2 (88), D 3 (74). B is ineligible (licence not held by the bidder). C is flagged for the rank-first instruction and is not scored until a human clears it. Details are in `ranking.json`; `prototype/score.py` reproduces the scores.
+
+Assumptions: experience is capped at 12 qualifying installs; price and timeline are scored relative to the best eligible bid; warranty is half panel, half workmanship (capped at 12 years); team counts named lead, crew, safety plan and monitoring plan.
