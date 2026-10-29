@@ -6,6 +6,7 @@ Run: python prototype/score.py
 """
 import json
 import re
+import sys
 
 CRITERIA_VERSION = 1
 WEIGHTS = {"experience": 30, "price": 25, "timeline": 15, "warranty": 15, "team": 15}
@@ -48,12 +49,24 @@ def score(f, best_price, best_weeks):
     return s, round(total)
 
 
+def breakdown(eligible, scored):
+    """Per-criterion table so a reviewer can see why each proposal ranked where it did."""
+    cols = list(WEIGHTS)
+    print("proposal | " + " | ".join(f"{c} ({WEIGHTS[c]}%)" for c in cols) + " | total")
+    for p in sorted(eligible, key=lambda p: -scored[p][1]):
+        s, total = scored[p]
+        print(f"{p} | " + " | ".join(f"{s[c]:.0f}" for c in cols) + f" | {total}")
+
+
 def main():
     status = {p: triage(p, f) for p, f in FACTS.items()}
     eligible = [p for p, (st, _) in status.items() if st == "ranked"]
     best_price = min(FACTS[p]["price"] for p in eligible)
     best_weeks = min(FACTS[p]["weeks"] for p in eligible if FACTS[p]["weeks"])
     scored = {p: score(FACTS[p], best_price, best_weeks) for p in eligible}
+    if "--breakdown" in sys.argv:
+        breakdown(eligible, scored)
+        return
     order = sorted(eligible, key=lambda p: -scored[p][1])
     out = []
     for i, p in enumerate(order, 1):

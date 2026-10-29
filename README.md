@@ -5,10 +5,10 @@
 - **Time spent:** TODO (fill in honestly)
 
 ## Files
-- [diagram/process-flow.png](diagram/process-flow.png) - process flow ([source](diagram/process-flow.mmd))
-- [WRITEUP.md](WRITEUP.md)
-- [PROMPTS.md](PROMPTS.md)
-- [ranking.json](ranking.json)
+- [diagram/process-flow.png](diagram/process-flow.png) - process flow with AI, rule and human steps marked
+- [WRITEUP.md](WRITEUP.md) - answers to the five questions, rubric and sample results
+- [PROMPTS.md](PROMPTS.md) - extraction and reason prompts, output schema
+- [ranking.json](ranking.json) - expected ranking of A-E
 - [prototype/score.py](prototype/score.py) - scoring script ([notes](prototype/README.md))
 
 ## AI usage disclosure
