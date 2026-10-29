@@ -1,0 +1,27 @@
+flowchart TD
+    U[Upload proposals] --> X
+    subgraph AI1[AI step 1 - extraction only]
+        X[Extract fields to JSON with quotes as evidence]
+        X --> INJ[Injection scan - flag meta-instructions]
+    end
+    INJ --> V{Schema valid and evidence found in source?}
+    V -- no --> RV1[HUMAN: fix extraction]
+    V -- yes --> M
+    subgraph RULES[Rule-based steps - deterministic code]
+        M{Mandatory check: Ontario licence, WSIB, 5M insurance}
+        M -- fail --> INEL[Status: ineligible + reason]
+        M -- unclear or subcontracted --> FLAG[Status: flagged]
+        M -- pass --> S
+        S[Score each criterion 0-100 by rubric]
+        S --> W[Weighted total: 30/25/15/15/15]
+    end
+    INJ -- injection found --> FLAG
+    subgraph AI2[AI step 2 - scoring support]
+        S -.-> N[Draft one-line reasoning per criterion]
+    end
+    W --> R[Ranked list + reasons]
+    FLAG --> HR
+    INEL --> HR
+    R --> HR[HUMAN CHECKPOINT: review, override with reason]
+    HR --> LOG[(Audit log: AI score, override, user ID, timestamp, criteria version, prompt version)]
+    LOG --> OUT[Final ranking.json]
