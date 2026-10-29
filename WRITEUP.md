@@ -18,7 +18,7 @@
 
 ## 2. Consistency and explainability
 
-- **Repeatable:** extraction runs at temperature 0 with a pinned model, versioned prompt and JSON schema, cached by file hash.
+- **Repeatable:** pinned model, versioned prompt, enforced JSON schema; each file is extracted once and cached by hash.
 - **Same result twice?** Yes. Scoring is code over stored facts, so the same facts and criteria version always give the same rank.
 - **Explainable:** per criterion the reviewer sees the extracted value, its source quote, score, weight and a one-line reason. Ineligible or flagged items show the exact rule that fired.
 
@@ -66,7 +66,7 @@
 | – | B | ineligible | – | – | – | – | – | – |
 | – | C | flagged | – | – | – | – | – | – |
 
-`prototype/score.py --breakdown` reproduces this table.
+`prototype/score.py --breakdown` reproduces this table from `criteria.v1.json`.
 
 **Assumptions** (to confirm with the admin):
 - Price compares to the best *eligible* bid, so B's low price does not affect others.

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "category": "Commercial Solar Installation",
+  "budget_ceiling_cad": 260000,
+  "max_weeks": 16,
+  "mandatory": {
+    "licence_held_by_bidder": true,
+    "wsib_clearance": true,
+    "min_liability_insurance_cad": 5000000
+  },
+  "weights": {
+    "experience": 30,
+    "price": 25,
+    "timeline": 15,
+    "warranty": 15,
+    "team": 15
+  },
+  "rubric": {
+    "experience_min_kw": 100,
+    "experience_years": 5,
+    "experience_full_marks_at": 12,
+    "panel_warranty_full_marks_years": 25,
+    "workmanship_warranty_full_marks_years": 12,
+    "team_items": ["named_lead", "defined_crew", "safety_plan", "monitoring_plan"]
+  },
+  "tie_break": ["price", "timeline"]
+}

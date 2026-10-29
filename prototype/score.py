@@ -1,83 +1,124 @@
-"""Deterministic scoring step of the triage flow.
+"""Deterministic half of the triage flow: status rules, rubric scoring, weighted total, ranking.
 
-Input is the structured JSON the extraction prompt (PROMPTS.md) would return,
-hand-entered below for the five samples. No API key is needed for this step.
-Run: python prototype/score.py
+Criteria come from a versioned config file, never from this code. Facts come from
+sample_facts.json (hand-entered) or from extract.py's output.
+
+Run:
+  python prototype/score.py                      # ranking.json-style output
+  python prototype/score.py --breakdown          # per-criterion table
+  python prototype/score.py --criteria my.json   # try changed criteria
+  python prototype/score.py --facts prototype/out/facts.json
 """
+import argparse
 import json
-import re
-import sys
+from pathlib import Path
 
-CRITERIA_VERSION = 1
-WEIGHTS = {"experience": 30, "price": 25, "timeline": 15, "warranty": 15, "team": 15}
-CEILING = 260_000
-MAX_WEEKS = 16
-
-# Extracted facts per proposal (None = not stated).
-FACTS = {
-    "A": dict(licence="direct", wsib_ins=True, installs=14, price=238_000, weeks=12, panel=25, work=10, team=4, injection=False),
-    "B": dict(licence="subcontractor", wsib_ins=True, installs=6, price=189_500, weeks=10, panel=25, work=5, team=1, injection=False),
-    "C": dict(licence="direct", wsib_ins=True, installs=9, price=244_000, weeks=14, panel=25, work=10, team=2, injection=True),
-    "D": dict(licence="direct", wsib_ins=True, installs=11, price=231_000, weeks=None, panel=25, work=10, team=2, injection=False),
-    "E": dict(licence="direct", wsib_ins=True, installs=8, price=242_500, weeks=13, panel=25, work=12, team=4, injection=False),
-}
-# team = count of: named lead, crew, safety plan, monitoring plan (max 4)
-
-INJECTION_RE = re.compile(r"automated (review|system)|pre-?approved|rank (it|this) first", re.I)
+HERE = Path(__file__).parent
 
 
-def triage(pid, f):
-    """Rules first: injection and mandatory checks decide status before any scoring."""
+def triage(f, c):
+    """Status rules run before any scoring. Returns (status, reason)."""
+    m = c["mandatory"]
     if f["injection"]:
-        return "flagged", "Contains text aimed at automated reviewers (rank-first instruction); held for human review, text ignored."
-    if f["licence"] != "direct":
-        return "ineligible", "Fails mandatory licence check: electrical work is subcontracted and the licence is not held by the bidder."
-    if not f["wsib_ins"] or f["price"] > CEILING:
-        return "ineligible", "Fails a mandatory or budget check."
+        return "flagged", "Contains text aimed at automated reviewers; ignored and held for human review."
+    if f["issues"]:
+        return "flagged", "Needs a person to confirm: " + "; ".join(f["issues"])
+    if m["licence_held_by_bidder"] and f["licence"] != "held_by_bidder":
+        who = "a subcontractor holds it" if f["licence"] == "subcontractor" else "not stated"
+        return "ineligible", f"Fails mandatory licence check: licence not held by the bidder ({who})."
+    if m["wsib_clearance"] and not f["wsib"]:
+        return "ineligible", "Fails mandatory check: WSIB clearance not confirmed."
+    if (f["insurance_cad"] or 0) < m["min_liability_insurance_cad"]:
+        return "ineligible", "Fails mandatory check: liability insurance below the required amount."
+    if f["price_cad"] is None:
+        return "flagged", "No total price stated; a person must confirm it."
+    if f["price_cad"] > c["budget_ceiling_cad"]:
+        return "ineligible", f"Price ${f['price_cad']:,} is over the ${c['budget_ceiling_cad']:,} ceiling."
+    if f["weeks"] is not None and f["weeks"] > c["max_weeks"]:
+        return "ineligible", f"Timeline of {f['weeks']} weeks is over the {c['max_weeks']}-week limit."
     return "ranked", ""
 
 
-def score(f, best_price, best_weeks):
+def score(f, c, best_price, best_weeks):
+    r = c["rubric"]
     s = {
-        "experience": min(f["installs"] / 12, 1) * 100,
-        "price": best_price / f["price"] * 100,
+        "experience": min((f["installs"] or 0) / r["experience_full_marks_at"], 1) * 100,
+        "price": best_price / f["price_cad"] * 100,
         "timeline": 0 if f["weeks"] is None else best_weeks / f["weeks"] * 100,
-        "warranty": 50 * f["panel"] / 25 + 50 * min(f["work"] / 12, 1),
-        "team": f["team"] / 4 * 100,
+        "warranty": 50 * min((f["panel_years"] or 0) / r["panel_warranty_full_marks_years"], 1)
+        + 50 * min((f["workmanship_years"] or 0) / r["workmanship_warranty_full_marks_years"], 1),
+        "team": sum(item in f["team"] for item in r["team_items"]) / len(r["team_items"]) * 100,
     }
-    total = sum(s[k] * WEIGHTS[k] / 100 for k in WEIGHTS)
+    total = sum(s[k] * w / 100 for k, w in c["weights"].items())
     return s, round(total)
 
 
-def breakdown(eligible, scored):
-    """Per-criterion table so a reviewer can see why each proposal ranked where it did."""
-    cols = list(WEIGHTS)
-    print("proposal | " + " | ".join(f"{c} ({WEIGHTS[c]}%)" for c in cols) + " | total")
-    for p in sorted(eligible, key=lambda p: -scored[p][1]):
+def reason(f, s, total):
+    strong = [k for k, v in s.items() if v >= 95]
+    weak = [k for k, v in s.items() if v < 60]
+    parts = [f"Score {total}/100."]
+    if strong:
+        parts.append("Strongest on " + ", ".join(strong) + ".")
+    if weak:
+        parts.append("Weaker on " + ", ".join(weak) + ".")
+    if f["weeks"] is None:
+        parts.append("No timeline stated (scored 0); reviewer should request a schedule.")
+    return " ".join(parts)
+
+
+def rank(facts, c):
+    if sum(c["weights"].values()) != 100:
+        raise SystemExit(f"Weights in criteria v{c['version']} add up to {sum(c['weights'].values())}, not 100.")
+    status = {p: triage(f, c) for p, f in facts.items()}
+    eligible = [p for p, (st, _) in status.items() if st == "ranked"]
+    scored = {}
+    if eligible:
+        best_price = min(facts[p]["price_cad"] for p in eligible)
+        weeks = [facts[p]["weeks"] for p in eligible if facts[p]["weeks"]]
+        best_weeks = min(weeks) if weeks else 1
+        scored = {p: score(facts[p], c, best_price, best_weeks) for p in eligible}
+
+    def tie_key(p):
+        f = facts[p]
+        keys = {"price": f["price_cad"], "timeline": f["weeks"] if f["weeks"] is not None else 10**6}
+        return (-scored[p][1], *[keys[k] for k in c["tie_break"]])
+
+    order = sorted(eligible, key=tie_key)
+    rows = []
+    for i, p in enumerate(order, 1):
         s, total = scored[p]
-        print(f"{p} | " + " | ".join(f"{s[c]:.0f}" for c in cols) + f" | {total}")
+        rows.append(dict(proposal=p, rank=i, status="ranked", score=total, reason=reason(facts[p], s, total)))
+    for p, (st, why) in status.items():
+        if st != "ranked":
+            rows.append(dict(proposal=p, rank=None, status=st, score=None, reason=why))
+    rows.sort(key=lambda r: r["proposal"])
+    return rows, scored, order
 
 
 def main():
-    status = {p: triage(p, f) for p, f in FACTS.items()}
-    eligible = [p for p, (st, _) in status.items() if st == "ranked"]
-    best_price = min(FACTS[p]["price"] for p in eligible)
-    best_weeks = min(FACTS[p]["weeks"] for p in eligible if FACTS[p]["weeks"])
-    scored = {p: score(FACTS[p], best_price, best_weeks) for p in eligible}
-    if "--breakdown" in sys.argv:
-        breakdown(eligible, scored)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--criteria", default=HERE / "criteria.v1.json")
+    ap.add_argument("--facts", default=HERE / "sample_facts.json")
+    ap.add_argument("--breakdown", action="store_true")
+    args = ap.parse_args()
+    c = json.loads(Path(args.criteria).read_text(encoding="utf-8"))
+    facts = {k: v for k, v in json.loads(Path(args.facts).read_text(encoding="utf-8")).items() if not k.startswith("_")}
+    rows, scored, order = rank(facts, c)
+
+    if args.breakdown:
+        cols = list(c["weights"])
+        print(f"Criteria version {c['version']}")
+        print("proposal | " + " | ".join(f"{k} ({c['weights'][k]}%)" for k in cols) + " | total")
+        for p in order:
+            s, total = scored[p]
+            print(f"{p} | " + " | ".join(f"{s[k]:.0f}" for k in cols) + f" | {total}")
+        for r in rows:
+            if r["status"] != "ranked":
+                print(f"{r['proposal']} | {r['status']}: {r['reason']}")
+        if not order:
+            print("No eligible proposals. The tool does not force a winner.")
         return
-    order = sorted(eligible, key=lambda p: -scored[p][1])
-    out = []
-    for i, p in enumerate(order, 1):
-        _, total = scored[p]
-        note = " No timeline stated, so timeline scores 0; flag for reviewer." if FACTS[p]["weeks"] is None else ""
-        out.append(dict(proposal=p, rank=i, status="ranked", score=total, reason=f"Weighted score {total}/100.{note}"))
-    for p, (st, why) in status.items():
-        if st != "ranked":
-            out.append(dict(proposal=p, rank=None, status=st, score=None, reason=why))
-    out.sort(key=lambda r: r["proposal"])
-    print(json.dumps(out, indent=2))
+    print(json.dumps(rows, indent=2))
 
 
 if __name__ == "__main__":
