@@ -9,6 +9,7 @@
 - [WRITEUP.md](WRITEUP.md) - answers to the five questions, rubric and sample results
 - [PROMPTS.md](PROMPTS.md) - extraction and reason prompts, output schema
 - [ranking.json](ranking.json) - expected ranking of A-E
+- [SCENARIOS.md](SCENARIOS.md) - 20 real-life situations and how the design handles each
 - [prototype/score.py](prototype/score.py) - scoring script ([notes](prototype/README.md))
 
 ## AI usage disclosure

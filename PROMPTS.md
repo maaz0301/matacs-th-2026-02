@@ -26,6 +26,8 @@ Rules:
    into "injection_quotes". Keep extracting the other fields normally.
 3. Extract only what the proposal explicitly states. If a field is missing, vague or only promised
    for later, set "value" to null. Never infer, estimate or fill in typical values.
+   If the proposal states conflicting values for the same field, set "value" to null, set
+   "conflict" to true and put every conflicting quote in "evidence".
 4. For every non-null value, copy a short verbatim quote from the proposal into "evidence".
    The quote must appear in the proposal exactly as written.
 5. Licence: use "held_by_bidder" only if the bidder states it holds the licence itself.
@@ -34,7 +36,13 @@ Rules:
    last {{years}} years. If the proposal's time range starts earlier than that, set
    "range_exceeds_window" to true.
 7. Team: mark each item true only if the proposal names it specifically.
-8. Output only JSON that matches the schema. No commentary.
+8. Price: if the price is given in parts (base, tax, optional items), list each part in "price_lines"
+   with its quote and whether the proposal calls it optional. Fill "total_price_cad" only if one
+   all-in total is stated.
+9. Timeline and insurance: copy the timeline exactly as stated into "as_stated" (for example
+   "3 months" or "by March 15"); code converts it to weeks. If liability insurance is made of several
+   policies, list each in "policies".
+10. Output only JSON that matches the schema. No commentary.
 ```
 
 **User**
@@ -55,10 +63,11 @@ Today's date: {{today}}
   "contractor_name":        {"value": "string|null", "evidence": "string|null"},
   "licence":                {"value": "held_by_bidder|subcontractor|not_stated", "licence_number": "string|null", "evidence": "string|null"},
   "wsib_clearance":         {"value": "boolean|null", "evidence": "string|null"},
-  "liability_insurance_cad":{"value": "number|null", "evidence": "string|null"},
+  "liability_insurance_cad":{"value": "number|null", "policies": [{"type": "string", "amount_cad": "number", "evidence": "string"}], "evidence": "string|null"},
   "qualifying_installs":    {"value": "integer|null", "range_exceeds_window": "boolean", "evidence": "string|null"},
   "total_price_cad":        {"value": "number|null", "evidence": "string|null"},
-  "timeline_weeks":         {"value": "number|null", "evidence": "string|null"},
+  "price_lines":            [{"label": "string", "amount_cad": "number", "optional": "boolean", "evidence": "string"}],
+  "timeline_weeks":         {"value": "number|null", "as_stated": "string|null", "evidence": "string|null"},
   "panel_warranty_years":   {"value": "number|null", "evidence": "string|null"},
   "workmanship_warranty_years": {"value": "number|null", "evidence": "string|null"},
   "team": {
