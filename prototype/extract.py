@@ -22,7 +22,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent
-MODEL = "claude-opus-5-5"
+MODEL = "claude-opus-5-5"  # Claude Opus 5.5, the current Opus model (October 2026); pinned on purpose
 PROMPT_VERSION = "extract-v1"
 
 # Code-side backstop for the model's own injection detection.
@@ -112,7 +112,9 @@ def call_model(system, user):
         system=system,
         messages=[{"role": "user", "content": user}],
         output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
-        # If the model declines, the API retries on a fallback model in the same call.
+        # Beta feature: if the model declines, the API retries on a fallback model in the
+        # same call. If the beta changes, remove these two lines; a decline is then caught
+        # by the refusal check below and the proposal goes to a person.
         betas=["server-side-fallback-2026-07-01"],
         fallbacks="default",
     )
@@ -209,7 +211,8 @@ def main():
             "years": c["rubric"]["experience_years"],
         })
         system_filled = fill(system, {"min_kw": c["rubric"]["experience_min_kw"],
-                                      "years": c["rubric"]["experience_years"]})
+                                      "years": c["rubric"]["experience_years"],
+                                      "window_start_year": datetime.date.today().year - c["rubric"]["experience_years"]})
         if args.dry_run:
             print("=== SYSTEM ===\n" + system_filled + "\n\n=== USER ===\n" + user)
             return
@@ -226,7 +229,7 @@ def main():
 
         issues = verify(ext, source)
         facts[pid] = normalise(ext, issues, source)
-        log.append({"proposal": pid, "file_hash": file_hash, "model": model,
+        log.append({"step": "extract", "proposal": pid, "file_hash": file_hash, "model": model,
                     "prompt_version": PROMPT_VERSION, "criteria_version": c["version"],
                     "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
                     "injection": facts[pid]["injection"], "issues": issues})

@@ -10,7 +10,7 @@
 - **To check it yourself:** run `python prototype/score.py --breakdown` (no API key needed).
 
 ## Files
-- [diagram/process-flow.png](diagram/process-flow.png) - process flow with AI, rule and human steps marked
+- [diagram/process-flow.png](diagram/process-flow.png) - process flow in four coloured lanes: Human (orange), AI (blue), Rules (green), Outcome. It follows a proposal from PDF upload → AI extraction → quote and injection checks → mandatory rules → scoring → AI-written reasons → human review and approval → ranked output, with every step writing to an audit log.
 - [WRITEUP.md](WRITEUP.md) - answers to the five questions, rubric and sample results
 - [PROMPTS.md](PROMPTS.md) - extraction and reason prompts, output schema
 - [ranking.json](ranking.json) - expected ranking of A-E

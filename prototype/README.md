@@ -32,6 +32,21 @@ python prototype/score.py --breakdown   # per-criterion table
 
 `extract.py --responses <folder>` re-runs the code checks on saved model outputs without calling the API.
 
+## Audit log
+
+Both scripts append to `prototype/out/audit_log.jsonl` (git-ignored, append-only):
+- `extract.py` writes one `extract` entry per proposal: file hash, model, prompt version, criteria version, injection result and issues.
+- `score.py` writes one `score` entry per proposal: status, rank, total and per-criterion scores, reason, criteria version, and `--user` as the reviewer ID.
+
+## Not built in the prototype
+
+These are part of the design but not in this code:
+- The reviewer screen, overrides with reasons, and the second approver for changes to rank 1.
+- Logins. The prototype has no users, so the user ID is whatever is passed with `--user`.
+- Notifying reviewers when something is flagged. In production this would be a queue on the reviewer's dashboard plus an email.
+- Retry and queueing when the API is down (scenario 18). The prototype stops with an error.
+- The AI step that writes reasons (Prompt 2). `score.py` writes a short reason from the scores instead.
+
 ## What I tested
 
 The API call itself was not run, because no key was available. Everything else was tested on the five samples using hand-written model outputs:

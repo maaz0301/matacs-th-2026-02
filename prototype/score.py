@@ -10,6 +10,7 @@ Run:
   python prototype/score.py --facts prototype/out/facts.json
 """
 import argparse
+import datetime
 import json
 from pathlib import Path
 
@@ -95,15 +96,33 @@ def rank(facts, c):
     return rows, scored, order
 
 
+def write_audit(path, rows, scored, c, args):
+    """Append-only record of how each result was produced."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    now = datetime.datetime.now().isoformat(timespec="seconds")
+    with open(path, "a", encoding="utf-8") as f:
+        for r in rows:
+            entry = {"step": "score", "proposal": r["proposal"], "status": r["status"], "rank": r["rank"],
+                     "score": r["score"], "criterion_scores": {k: round(v) for k, v in scored[r["proposal"]][0].items()}
+                     if r["proposal"] in scored else None, "reason": r["reason"],
+                     "criteria_version": c["version"], "facts_file": str(args.facts),
+                     "user_id": args.user, "timestamp": now}
+            f.write(json.dumps(entry) + "\n")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--criteria", default=HERE / "criteria.v1.json")
     ap.add_argument("--facts", default=HERE / "sample_facts.json")
     ap.add_argument("--breakdown", action="store_true")
+    ap.add_argument("--audit-log", default=HERE / "out" / "audit_log.jsonl",
+                    help="append one scoring entry per proposal here (same log extract.py writes to)")
+    ap.add_argument("--user", default=None, help="reviewer ID recorded in the audit log (no login in the prototype)")
     args = ap.parse_args()
     c = json.loads(Path(args.criteria).read_text(encoding="utf-8"))
     facts = {k: v for k, v in json.loads(Path(args.facts).read_text(encoding="utf-8")).items() if not k.startswith("_")}
     rows, scored, order = rank(facts, c)
+    write_audit(Path(args.audit_log), rows, scored, c, args)
 
     if args.breakdown:
         cols = list(c["weights"])

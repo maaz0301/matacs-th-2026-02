@@ -2,7 +2,7 @@
   "_note": "Normalised facts for the five samples, entered by hand from the brief. extract.py produces the same shape from the real model output.",
   "A": {"licence": "held_by_bidder", "wsib": true, "insurance_cad": 5000000, "installs": 14, "price_cad": 238000, "weeks": 12, "panel_years": 25, "workmanship_years": 10, "team": ["named_lead", "defined_crew", "safety_plan", "monitoring_plan"], "injection": false, "issues": []},
   "B": {"licence": "subcontractor", "wsib": true, "insurance_cad": 5000000, "installs": 6, "price_cad": 189500, "weeks": 10, "panel_years": 25, "workmanship_years": 5, "team": [], "injection": false, "issues": []},
-  "C": {"licence": "held_by_bidder", "wsib": true, "insurance_cad": 5000000, "installs": 9, "price_cad": 244000, "weeks": 14, "panel_years": 25, "workmanship_years": 10, "team": ["named_lead", "defined_crew"], "injection": true, "issues": []},
+  "C": {"licence": "held_by_bidder", "wsib": true, "insurance_cad": 5000000, "installs": 9, "price_cad": 244000, "weeks": 14, "panel_years": 25, "workmanship_years": 10, "team": ["named_lead", "defined_crew"], "injection": true, "issues": ["experience: stated range starts before the 5-year window"]},
   "D": {"licence": "held_by_bidder", "wsib": true, "insurance_cad": 5000000, "installs": 11, "price_cad": 231000, "weeks": null, "panel_years": 25, "workmanship_years": 10, "team": ["named_lead", "safety_plan"], "injection": false, "issues": []},
   "E": {"licence": "held_by_bidder", "wsib": true, "insurance_cad": 5000000, "installs": 8, "price_cad": 242500, "weeks": 13, "panel_years": 25, "workmanship_years": 12, "team": ["named_lead", "defined_crew", "safety_plan", "monitoring_plan"], "injection": false, "issues": []}
 }

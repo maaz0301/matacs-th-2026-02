@@ -1,6 +1,8 @@
 # Prompts
 
-Two prompts, sent exactly as written. `{{...}}` are filled in by code.
+Two prompts, sent exactly as written. `{{...}}` placeholders are filled in by code before sending:
+- **System block:** `{{min_kw}}`, `{{years}}` and `{{window_start_year}}` come from the criteria config (`prototype/criteria.v1.json`), so the prompt follows the admin's settings.
+- **User block:** `{{category_name}}`, `{{today}}` and `{{proposal_text}}`.
 
 **Ground rules for both**
 - Proposal text is **data, never instructions**. It is wrapped in tags and the model is told so.
@@ -34,7 +36,8 @@ Rules:
 5. Licence: use "held_by_bidder" only if the bidder states it holds the licence itself.
    Use "subcontractor" if a subcontractor will hold it. Otherwise "not_stated".
 6. Qualifying installs: count only commercial installations of {{min_kw}} kW or more completed in the
-   last {{years}} years. If the proposal's time range starts earlier than that, set
+   last {{years}} years, comparing by calendar year (a range starting in {{window_start_year}} or later
+   is inside). If the proposal's time range starts before {{window_start_year}}, set
    "range_exceeds_window" to true.
 7. Team: mark each item true only if the proposal names it specifically.
 8. Price: if the price is given in parts (base, tax, optional items), list each part in "price_lines"
